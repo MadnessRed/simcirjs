@@ -229,8 +229,8 @@ var simcir = function($) {
   var isActiveNode = function($o) {
     return $o.closest('.simcir-node').length == 1 &&
       $o.closest('.simcir-toolbox').length == 0;
-  };
-
+  };  
+  
   var createNodeController = function(node) {
     var _value = null;
     var setValue = function(value, force) {
@@ -717,7 +717,16 @@ var simcir = function($) {
     moveTo(x, y);
     return $dlg;
   };
-
+  
+  var library_dblclick_func = function(device, data){
+  	showDialog(device.deviceDef.label || device.deviceDef.type,
+            setupSimcir($('<div></div>'), data) );
+  }
+  
+  var set_dblclick_func = function(func){
+  	library_dblclick_func = func;
+  }
+  
   var createDeviceRefFactory = function(data) {
     return function(device) {
       var $devs = buildCircuit(data, true);
@@ -780,8 +789,7 @@ var simcir = function($) {
         // open library,
         event.preventDefault();
         event.stopPropagation();
-        showDialog(device.deviceDef.label || device.deviceDef.type,
-            setupSimcir($('<div></div>'), data) );
+        library_dblclick_func(device, data);
       });
     };
   };
@@ -1407,6 +1415,7 @@ var simcir = function($) {
     enableEvents: enableEvents,
     graphics: graphics,
     controller: controller,
-    unit: unit
+    unit: unit,
+    set_dblclick_func: set_dblclick_func
   };
 }(jQuery);
