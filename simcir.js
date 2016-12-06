@@ -884,6 +884,7 @@ var simcir = function($) {
       css({'margin-left' : toolboxWidth + 'px'}).
       //css({width:(workspaceWidth - toolboxWidth) + 'px', height: workspaceHeight + 'px', 'margin-left' : toolboxWidth + 'px'}).
       addClass('simcir-workarea').append($workspace));
+    $workArea.ws = $workspace;
 
     var addDevice = function($dev) {
       $devicePane.append($dev);
@@ -1274,7 +1275,7 @@ var simcir = function($) {
 
   var setupSimcir = function($placeHolder, data) {
     var $workspace = simcir.createWorkspace(data);
-    var $dataArea = $('<textarea></textarea>').
+    var $dataArea = $('<textarea style="width:calc(100% - 10px); height:calc(100% - 10px);"></textarea>').
       addClass('simcir-json-data-area').
       attr('readonly', 'readonly');
     var showData = false;
@@ -1282,7 +1283,7 @@ var simcir = function($) {
       $workspace.css('display', !showData? 'inline' : 'none');
       $dataArea.css('display', showData? 'inline' : 'none');
       if (showData) {
-        $dataArea.val(controller($workspace).text() ).focus();
+        $dataArea.val(controller($workspace.ws).text() ).focus();
       }
       showData = !showData;
     };
