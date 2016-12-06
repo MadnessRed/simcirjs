@@ -144,6 +144,56 @@
   var EOR = function(a, b) { return a ^ b; };
   var BUF = function(a) { return (a == 1)? 1 : 0; };
   var NOT = function(a) { return (a == 1)? 0 : 1; };
+  
+  // bus function
+  var BUSF = function(op, a, b){
+  	//console.log(op,a,b, typeof a, typeof b);
+  	if(op == null){
+  		console.log("wtf?");
+  		return a;
+  	}
+  	
+  	//If a or b do not have an input, use 0
+  	if(a == null)
+  		a = 0;
+  	if(b == null)
+  		b = 0;
+  	
+  	//If both a and b are not objects (not busses) then simply do the operation.
+    if(typeof a != "object" && typeof b != "object"){
+    	//console.log(op, a, b, op(a,b));
+    	return op(a,b) == 1 ? 1 : null;
+    }
+    
+    //Otherwise, if a is not a bus, convert it to a bus the same length as b, eg 1 op [1,0,1,1] becomes [1,1,1,1] op [1,0,1,1]
+    else if(typeof a != "object"){
+    	console.log(a,b);
+    	var t = a;
+    	a = [];
+    	while(a.length < b.length)
+    		a.push(t);
+    }
+    	
+    //And if b is not a bus, convert it to a bus the same length as a
+    else if(typeof b != "object"){
+    	console.log(a,b);
+    	var t = b;
+    	b = [];
+    	while(b.length < a.length)
+    		b.push(t);
+    }
+    
+    //Now we definitely have two buses
+    var c = [];
+    var l = Math.max(a.length, b.length);
+    for (var i = 0; i < l; i += 1) {
+    	c.push(BUSF(op, a[i], b[i]) == 1 ? 1 : null);
+    }
+    
+    //Return the bus
+    //console.log(op,a,b,c);
+    return c;
+  }
 
   var onValue = 1;
   var offValue = null;
@@ -225,7 +275,11 @@
     };
   };
 
-  var createLogicGateFactory = function(op, out, draw) {
+   var createLogicGateFactory = function(ops, outs, draw) {
+    
+    var op = (ops == null) ? null : function(a, b){ return BUSF(ops, a, b); }
+    var out = function(a){ return BUSF(outs, a, null); }
+    
     return function(device) {
       var numInputs = (op == null)? 1 :
         Math.max(2, device.deviceDef.numInputs || 2);
@@ -237,14 +291,17 @@
       var inputs = device.getInputs();
       var outputs = device.getOutputs();
       device.$ui.on('inputValueChange', function() {
-        var b = intValue(inputs[0].getValue() );
+        //var b = intValue(inputs[0].getValue() );
+        var b = inputs[0].getValue();	//Anthony Stewart - Possibly a bus
         if (op != null) {
           for (var i = 1; i < inputs.length; i += 1) {
-            b = op(b, intValue(inputs[i].getValue() ) );
+            //b = op(b, intValue(inputs[i].getValue() ) );
+            b = op(b, inputs[i].getValue());	//Anthony Stewart - Possibly a bus
           }
         }
         b = out(b);
-        outputs[0].setValue( (b == 1)? 1 : null);
+        //outputs[0].setValue( (b == 1)? 1 : null);
+        outputs[0].setValue(b);	//Anthony Stewart - Possibly a bus
       });
       var super_createUI = device.createUI;
       device.createUI = function() {

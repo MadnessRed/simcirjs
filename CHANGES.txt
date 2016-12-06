@@ -4,5 +4,9 @@ A list of changes.
 
 
 6/12/16:
+	Logic Factory Gates now support bussed inputs.
+
+
+6/12/16:
 	Copied in the native scrollbars by SiSt and shurikenZ
 	https://github.com/SiSt/simcirjs/commits/master
