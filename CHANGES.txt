@@ -2,6 +2,8 @@
 
 A list of changes.
 
+6/12/16:
+	Rotary Encoder and 7 seg now allow bussed inputs.
 
 6/12/16:
 	Logic Factory Gates now support bussed inputs.

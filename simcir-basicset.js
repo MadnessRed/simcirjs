@@ -543,17 +543,26 @@
     var seg = _7Seg;
 
     return function(device) {
+      var bus = device.deviceDef.bus || false;
       var hiColor = device.deviceDef.color || defaultLEDColor;
       var bgColor = device.deviceDef.bgColor || defaultLEDBgColor;
       var loColor = multiplyColor(hiColor, bgColor, 0.25);
-      for (var i = 0; i < 4; i += 1) {
-        device.addInput();
+      
+      if(bus){
+        device.addInput('', 'x4');
+        //device.addInput();
+      }
+      
+      else{
+        for (var i = 0; i < 4; i += 1) {
+          device.addInput();
+        }
       }
 
       var super_getSize = device.getSize;
       device.getSize = function() {
         var size = super_getSize();
-        return {width: unit * 4, height: size.height};
+        return {width: unit * 4, height: unit * 4};
       };
 
       var super_createUI = device.createUI;
@@ -562,14 +571,33 @@
 
         var $seg = createSegUI(device, seg);
         device.$ui.append($seg);
+        
+        var extractValue = function(busValue, i) {
+          return (busValue != null && typeof busValue == 'object' &&
+            typeof busValue[i] != 'undefined')? busValue[i] : null;
+        };
   
         var update = function() {
           var value = 0;
-          for (var i = 0; i < 4; i += 1) {
-            if (isHot(device.getInputs()[i].getValue() ) ) {
-              value += (1 << i);
+          
+          if(bus){
+            busValue = device.getInputs()[0].getValue();
+            for (var i = 0; i < 4; i += 1) {
+              if (extractValue(busValue, i)) {
+                value += (1 << i);
+              }
+            }
+            var busValue = device.getInputs()[0].getValue();
+          }
+          
+          else{
+            for (var i = 0; i < 4; i += 1) {
+              if (isHot(device.getInputs()[i].getValue() ) ) {
+                value += (1 << i);
+              }
             }
           }
+          
           $seg.children().remove();
           drawSeg(seg, $s.graphics($seg), getPattern(value),
               hiColor, loColor, bgColor);
@@ -583,10 +611,14 @@
               description: 'color in hexadecimal.'},
             {name: 'bgColor', type: 'string',
               defaultValue: defaultLEDBgColor,
-              description: 'background color in hexadecimal.'}
+              description: 'background color in hexadecimal.'},
+            {name: 'bus', type: 'boolean',
+              defaultValue: false,
+              description: 'should this item accept 4 single bit inputs or a single 4bit bus input?'}
           ],
           code: '{"type":"' + device.deviceDef.type +
-          '","color":"' + defaultLEDColor + '"}'
+          '","color":"' + defaultLEDColor +
+          '","bus":"' + false + '"}'
         };
       };
     };
@@ -606,17 +638,25 @@
       return angle;
     };
     return function(device) {
+      var bus = device.deviceDef.bus || false;
       var numOutputs = Math.max(2, device.deviceDef.numOutputs || 4);
-      device.halfPitch = numOutputs > 4;
+      device.halfPitch = numOutputs > 4 && !bus;
       device.addInput();
-      for (var i = 0; i < numOutputs; i += 1) {
-        device.addOutput();
+      
+      if(bus){
+        device.addOutput('', 'x' + numOutputs);
+      }
+      
+      else{
+        for (var i = 0; i < numOutputs; i += 1) {
+          device.addOutput();
+        }
       }
 
       var super_getSize = device.getSize;
       device.getSize = function() {
         var size = super_getSize();
-        return {width: unit * 4, height: size.height};
+        return {width: unit * 4, height: Math.max(unit * 4, size.height)};
       };
 
       var super_createUI = device.createUI;
@@ -680,9 +720,28 @@
           var max = 1 << numOutputs;
           var value = Math.min( ( (_angle - _MIN_ANGLE) /
               (_MAX_ANGLE - _MIN_ANGLE) * max), max - 1);
-          for (var i = 0; i < numOutputs; i += 1) {
-            device.getOutputs()[i].setValue( (value & (1 << i) )?
+          
+          
+          if(bus){
+            var busValue = [];
+            var hotCount = 0;
+            for (var i = 0; i < numOutputs; i += 1) {
+              var thisValue = ((value & (1 << i) ) ? device.getInputs()[0].getValue() : null);
+              if (isHot(thisValue) ) {
+                hotCount += 1;
+              }
+              busValue.push(thisValue);
+            }
+            //console.log((hotCount > 0) ? busValue : null);
+            //device.getOutputs()[0].setValue((hotCount > 0) ? busValue : null);
+            device.getOutputs()[0].setValue(busValue);
+          
+          }
+          else{
+            for (var i = 0; i < numOutputs; i += 1) {
+              device.getOutputs()[i].setValue( (value & (1 << i) )?
                 device.getInputs()[0].getValue() : null);
+            }
           }
         };
         device.$ui.on('inputValueChange', update);
@@ -690,9 +749,12 @@
         device.doc = {
           params: [
             {name: 'numOutputs', type: 'number', defaultValue: 4,
-              description: 'number of outputs.'}
+              description: 'number of outputs.'},
+            {name: 'bus', type: 'boolean',
+              defaultValue: false,
+              description: 'should this item accept 4 single bit inputs or a single 4bit bus input?'}
           ],
-          code: '{"type":"' + device.deviceDef.type + '","numOutputs":4}'
+          code: '{"type":"' + device.deviceDef.type + '","numOutputs":4,"bus":false}'
         };
       };
     };
